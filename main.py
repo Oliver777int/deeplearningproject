@@ -27,7 +27,7 @@ else:
 
 
 class Build_Dataset():
-    sarbilder = r'D:\Sar_download2'
+    sarbilder = r'D:\Mini_training_set'
     count = 0
     training_data = []
 
@@ -37,11 +37,14 @@ class Build_Dataset():
                 path = os.path.join(self.sarbilder, f)
                 img = imread(path)
                 pxlimg=np.array(img)
-
+                subpxlimg = blockshaped(pxlimg, 50, 50)     # Subdivide one 200x200 image into 16 50x50 images
                 p = f.split('.tif')[0]
                 label = float(p.split('_')[5])
-                self.training_data.append([pxlimg, label])
-                self.count += 1
+                for i in range(16):
+
+                    self.training_data.append([subpxlimg[i], label])
+                    self.count += 1
+
             except Exception as e:
                 print(str(e))
 
@@ -54,19 +57,19 @@ class Build_Dataset():
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 16, (5, 5))    # Conv layer
-        self.batchnorm1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(16, 24, (5, 5))   # Conv layer 2
-        self.batchnorm2 = nn.BatchNorm2d(24)
-        self.conv3 = nn.Conv2d(24, 32, (5, 5))  # Conv layer 3
-        self.batchnorm3 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(1, 32, (5, 5))    # Conv layer
+        self.batchnorm1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(32, 64, (5, 5))   # Conv layer 2
+        self.batchnorm2 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(64, 128, (5, 5))  # Conv layer 3
+        self.batchnorm3 = nn.BatchNorm2d(128)
 
         # Intermediary part that finds the value of self._to_linear
-        x = torch.randn(400, 400).view(-1, 1, 400, 400)
+        x = torch.randn(50, 50).view(-1, 1, 50, 50)
         self._to_linear = None
         self.convs(x)
-        self.fc1 = nn.Linear(self._to_linear, 64)  # Fully connected layer 1
-        self.fc2 = nn.Linear(64, 1)                # Fully connected layer 2
+        self.fc1 = nn.Linear(self._to_linear, 512)  # Fully connected layer 1
+        self.fc2 = nn.Linear(512, 1)                # Fully connected layer 2
 
     def convs(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
@@ -93,20 +96,31 @@ class Net(nn.Module):
 def test(size=32):
     random_start = np.random.randint(len(test_x)-size)
     x, y = test_x[random_start:random_start+size], test_y[random_start:random_start+size]
-    x, y = x.view(-1, 1, 400, 400).to(device), y.to(device)
+    x, y = x.view(-1, 1, 50, 50).to(device), y.to(device)
     with torch.no_grad():
         val_loss = fwd_pass(x, y)
     return val_loss
 
 
+def give_prediction(size=32):
+    random_start = np.random.randint(len(test_x)-size)
+    x, y = test_x[random_start:random_start+size], test_y[random_start:random_start+size]
+    x, y = x.view(-1, 1, 50, 50).to(device), y.to(device)
+
+    outputs = net(x)
+    #result = np.array(outputs.cpu())
+    #y = np.array(y.cpu())
+    return outputs, y
+
+
 def train():
-    BATCH_SIZE = 30
-    EPOCHS = 4
+    BATCH_SIZE = 200
+    EPOCHS = 15
     with open(f'{MODEL_NAME}.log', 'a') as f:
         for epoch in range(EPOCHS):
             for i in tqdm(range(0, len(train_x), BATCH_SIZE)):
                 # print(i, i+BATCH_SIZE)
-                batch_x = train_x[i:i + BATCH_SIZE].view(-1, 1, 400, 400)
+                batch_x = train_x[i:i + BATCH_SIZE].view(-1, 1, 50, 50)
                 batch_y = train_y[i:i + BATCH_SIZE]
 
                 batch_x, batch_y = batch_x.to(device), batch_y.to(device)
@@ -123,14 +137,30 @@ def fwd_pass(x, y, train=False):
     if train:
         net.zero_grad()
     outputs = net(x)
-    #alpha = np.array(outputs.cpu())
+    #result = np.array(outputs.cpu())
     #beta = np.array(y.cpu())
     loss = loss_function(outputs, y)
 
     if train:
         loss.backward()
         optimizer.step()
-    return loss #, alpha, beta
+    return loss
+
+
+def blockshaped(arr, nrows, ncols):
+    """
+    Return an array of shape (n, nrows, ncols) where
+    n * nrows * ncols = arr.size
+
+    If arr is a 2D array, the returned array should look like n subblocks with
+    each subblock preserving the "physical" layout of arr.
+    """
+    h, w = arr.shape
+    #assert h % nrows == 0, f"{h} rows is not evenly divisible by {nrows}"
+    #assert w % ncols == 0, f"{w} cols is not evenly divisible by {ncols}"
+    return (arr.reshape(h//nrows, nrows, -1, ncols)
+               .swapaxes(1, 2)
+               .reshape(-1, nrows, ncols))
 
 
 def create_loss_graph(model_name):
@@ -174,7 +204,7 @@ training_data = np.load('training_data.npy', allow_pickle=True)    # Load in pix
 
 # Separates data into testing and training, both the images and the labels
 
-x = torch.Tensor(np.array([i[0] for i in training_data])).view(-1, 400, 400)
+x = torch.Tensor(np.array([i[0] for i in training_data])).view(-1, 50, 50)
 x = (x - torch.mean(x))/torch.std(x)
 y = torch.Tensor(np.array([i[1] for i in training_data])).view(-1, 1)
 
@@ -192,7 +222,8 @@ loss_function = nn.MSELoss()
 print(MODEL_NAME)
 train()
 create_loss_graph(MODEL_NAME)
-
-
+#res, ans = give_prediction(100)
+#res = res.detach().cpu().numpy()
+#ans = ans.detach().cpu().numpy()
 
 

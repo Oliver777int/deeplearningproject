@@ -16,9 +16,8 @@ from tifffile import imread
 import time
 
 # Set to true if you want to build the data
-rebuild_data = False
+rebuild_data = True
 if torch.cuda.is_available():
-    # device = torch.device("cpu")
     device = torch.device("cuda:0")
     print('Running on the GPU')
 else:
@@ -27,7 +26,7 @@ else:
 
 
 class Build_Dataset():
-    sarbilder = r'D:\Mini_training_set'
+    sarbilder = r'D:\Mini_training_set2'
     count = 0
     training_data = []
 
@@ -103,8 +102,8 @@ def test(size=32):
 
 
 def give_prediction(size=32):
-    random_start = np.random.randint(len(test_x)-size)
-    x, y = test_x[random_start:random_start+size], test_y[random_start:random_start+size]
+    random_start = np.random.randint(len(train_x)-size)
+    x, y = train_x[random_start:random_start+size], train_y[random_start:random_start+size]
     x, y = x.view(-1, 1, 50, 50).to(device), y.to(device)
 
     outputs = net(x)
@@ -114,8 +113,8 @@ def give_prediction(size=32):
 
 
 def train():
-    BATCH_SIZE = 200
-    EPOCHS = 15
+    BATCH_SIZE = 4
+    EPOCHS = 500
     with open(f'{MODEL_NAME}.log', 'a') as f:
         for epoch in range(EPOCHS):
             for i in tqdm(range(0, len(train_x), BATCH_SIZE)):
@@ -205,7 +204,7 @@ training_data = np.load('training_data.npy', allow_pickle=True)    # Load in pix
 # Separates data into testing and training, both the images and the labels
 
 x = torch.Tensor(np.array([i[0] for i in training_data])).view(-1, 50, 50)
-x = (x - torch.mean(x))/torch.std(x)
+#x = (x - torch.mean(x))/torch.std(x)
 y = torch.Tensor(np.array([i[1] for i in training_data])).view(-1, 1)
 
 train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=0.1)
@@ -216,14 +215,15 @@ train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=0.1)
 
 MODEL_NAME = f'model-{int(time.time())}'
 net = Net().to(device)
-optimizer = optim.Adam(net.parameters(), lr=0.0001)
+optimizer = optim.Adam(net.parameters(), lr=0.001)
 loss_function = nn.MSELoss()
 
 print(MODEL_NAME)
 train()
 create_loss_graph(MODEL_NAME)
-#res, ans = give_prediction(100)
-#res = res.detach().cpu().numpy()
-#ans = ans.detach().cpu().numpy()
-
+res, ans = give_prediction(70)
+res = res.detach().cpu().numpy()
+ans = ans.detach().cpu().numpy()
+plt.scatter(ans, res)
+plt.show()
 

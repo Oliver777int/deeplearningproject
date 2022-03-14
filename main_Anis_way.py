@@ -8,9 +8,17 @@ learning_rate = 0.005
 number_of_epochs = 500
 
 
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+    print('Running on the GPU')
+else:
+    device = torch.device("cpu")
+    print('Running on the CPU')
+
+
 class CustomCsvDataset():
     def __init__(self, dataset):
-        self.dataset = dataset
+        self.dataset = dataset.to(device)
 
     def __len__(self):
         return len(self.dataset.shape)
@@ -18,14 +26,14 @@ class CustomCsvDataset():
     def __getitem__(self, idx):
         input = self.dataset[idx, 0:self.dataset.size(1) - 1]
         label = self.dataset[idx, self.dataset.size(1) - 1]
-        return (input, label)
+        return input, label
 
 
 class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.hid1 = torch.nn.Linear(num_of_input, 100)
-        self.drop1 = torch.nn.Dropout(0.5) # add dropout if the model starts to overfit
+        self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
         self.hid2 = torch.nn.Linear(100, 100)
         self.drop2 = torch.nn.Dropout(0.25)
         self.output = torch.nn.Linear(100, 1)
@@ -64,23 +72,18 @@ class Net(torch.nn.Module):
 
 
 def main():
-    if torch.cuda.is_available():
-        device = torch.device("cuda:0")
-        print('Running on the GPU')
-    else:
-        device = torch.device("cpu")
-        print('Running on the CPU')
 
-    file_path_train = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\train_data_file1.csv'
-    file_path_validation = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\validation_data_file1.csv'
+    file_path_train = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\train_data_file1.csv'  # r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\train_data_file1.csv'
+    file_path_validation = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\validation_data_file1.csv'  # r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\validation_data_file1.csv'
 
     training_data = np.loadtxt(file_path_train, dtype=np.float32, delimiter=",", skiprows=1)
-    training_data = torch.from_numpy(all_data)
+    training_data = torch.from_numpy(training_data)
     train_data = CustomCsvDataset(training_data)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 
+
     validation_data = np.loadtxt(file_path_train, dtype=np.float32, delimiter=",", skiprows=1)
-    validation_data = torch.from_numpy(all_data)
+    validation_data = torch.from_numpy(validation_data)
     val_data = CustomCsvDataset(validation_data)
     val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
@@ -94,6 +97,7 @@ def main():
         epoch_loss = 0.0
 
         for (batch_idx, batch) in enumerate(train_dataloader):
+            print(f'batch {batch}')
             X = batch[0]
             Y = batch[1]
 
@@ -101,6 +105,8 @@ def main():
             output = net(X)
 
             loss_val = loss_func(output, Y)
+            print(f'output {output}')
+            print(Y)
             epoch_loss += loss_val.item()
             loss_val.backward()
             optimizer.step()

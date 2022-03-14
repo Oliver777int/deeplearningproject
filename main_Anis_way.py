@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 num_of_input = 3
 batch_size = 100
 learning_rate = 0.005
-number_of_epochs = 4000
+number_of_epochs = 400
 
 
 if torch.cuda.is_available():
@@ -59,7 +59,7 @@ def main():
     train_data = CustomCsvDataset(training_data)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 
-    validation_data = np.loadtxt(file_path_train, dtype=np.float32, delimiter=",", skiprows=1)
+    validation_data = np.loadtxt(file_path_validation, dtype=np.float32, delimiter=",", skiprows=1)
     validation_data = torch.from_numpy(validation_data)
     val_data = CustomCsvDataset(validation_data)
     val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)

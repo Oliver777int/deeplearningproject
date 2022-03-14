@@ -2,7 +2,7 @@
 # predict price from AC, sq ft, style, nearest school
 # PyTorch 1.7.0-CPU Anaconda3-2020.02  Python 3.7.6
 # Windows 10 
-
+# https://stackoverflow.com/questions/45310254/fixed-digits-after-decimal-with-f-strings
 import numpy as np
 import time
 import torch as T

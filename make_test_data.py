@@ -18,11 +18,14 @@ def create_data(rows, cols):
        # data = np.transpose(data)
         #data = torch.from_numpy(data)ds
     return data
-train_data = create_data(10000, 4)
+train_data = create_data(1000, 4)
 validation_data = create_data(1000,4)
 
-file_path_train = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\train_data_file1.csv' #r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\train_data_file1.csv'
-file_path_validation = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\validation_data_file1.csv' #r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\validation_data_file1.csv'
+# file_path_train = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\train_data_file1.csv'
+# file_path_validation = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\validation_data_file1.csv'
+
+file_path_train = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\train_data_file1.csv'
+file_path_validation = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\validation_data_file1.csv'
 
 with open(file_path_train, 'w', encoding='UTF8', newline="\n") as f:
     header = ['param1', 'param2', 'param3', 'labels']

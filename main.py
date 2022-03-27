@@ -26,7 +26,7 @@ else:
 
 
 class Build_Dataset():
-    sarbilder = r'D:\Mini_training_set2'
+    sarbilder = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data'
     count = 0
     training_data = []
 
@@ -102,8 +102,8 @@ def test(size=32):
 
 
 def give_prediction(size=32):
-    random_start = np.random.randint(len(train_x)-size)
-    x, y = train_x[random_start:random_start+size], train_y[random_start:random_start+size]
+    random_start = np.random.randint(len(test_x)-size)
+    x, y = test_x[random_start:random_start+size], test_y[random_start:random_start+size]
     x, y = x.view(-1, 1, 50, 50).to(device), y.to(device)
 
     outputs = net(x)
@@ -113,8 +113,8 @@ def give_prediction(size=32):
 
 
 def train():
-    BATCH_SIZE = 4
-    EPOCHS = 500
+    BATCH_SIZE = 200
+    EPOCHS = 15
     with open(f'{MODEL_NAME}.log', 'a') as f:
         for epoch in range(EPOCHS):
             for i in tqdm(range(0, len(train_x), BATCH_SIZE)):

@@ -106,7 +106,7 @@ def main():
             if abs_delta < max_allow:
                 correct +=1
             else:
-                print(f'val_data {val_data} label {label}')
+                #print(f'val_data {val_data} label {label}')
             total += 1
         acc = correct/total
         return acc

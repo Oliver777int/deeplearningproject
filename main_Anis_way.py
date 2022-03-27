@@ -2,11 +2,11 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-num_of_input = 3
+num_of_input = 5
 batch_size = 100
 learning_rate = 0.005
-number_of_epochs = 400
-
+number_of_epochs = 5000
+path_to_loaded_model = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\model_anis.pth'
 
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
@@ -32,16 +32,18 @@ class CustomCsvDataset():
 class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.hid1 = torch.nn.Linear(num_of_input, 20)
-        self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
-        self.hid2 = torch.nn.Linear(20, 20)
-        self.drop2 = torch.nn.Dropout(0.25)
-        self.output = torch.nn.Linear(20, 1)
+        self.hid1 = torch.nn.Linear(num_of_input, 30)
+        #self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
+        self.hid2 = torch.nn.Linear(30, 30)
+        self.hid2 = torch.nn.Linear(30, 30)
+        self.hid2 = torch.nn.Linear(30, 30)
+
+        #self.drop2 = torch.nn.Dropout(0.25)
+        self.output = torch.nn.Linear(30, 1)
 
     def forward(self, x):
         z = torch.relu(self.hid1(x))
        #z = self.drop1(z)
-        z = torch.relu(self.hid2(z))
         #z = self.drop2(z)
         z = torch.relu(self.hid2(z))
         z = self.output(z)
@@ -49,6 +51,8 @@ class Net(torch.nn.Module):
 
 
 def main():
+    torch.manual_seed(4)
+    np.random.seed(4)
     # file_path_train = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\train_data_file1.csv'
     # file_path_validation = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\validation_data_file1.csv'
     file_path_train = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\train_data_file1.csv'
@@ -65,12 +69,15 @@ def main():
     val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
     net = Net().to(device)
+    net.load_state_dict(torch.load(path_to_loaded_model))
+    net.eval()
 
 
     loss_func = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)
     net.train()
     for epoch in range(number_of_epochs):
+        torch.manual_seed(1+epoch) # recovery reproducibility
         epoch_loss = 0.0
 
         for (idx, X) in enumerate(train_dataloader):
@@ -98,18 +105,20 @@ def main():
             max_allow = np.abs(pct*label.item())
             if abs_delta < max_allow:
                 correct +=1
+            else:
+                print(f'val_data {val_data} label {label}')
             total += 1
         acc = correct/total
         return acc
 
     net.eval()
-    ok_error = 0.001
+    ok_error = 0.01
     train_acc = accuracy(net, train_data, ok_error)
-    print(train_acc)
+    print(f'train accuracy: {train_acc}')
     val_acc = accuracy(net, val_data, ok_error)
-    print(val_acc)
+    print(f'validation accuracy: {val_acc}')
 
-
+    torch.save(net.state_dict(), path_to_loaded_model)
 
 if __name__ == '__main__':
     main()

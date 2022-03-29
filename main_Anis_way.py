@@ -135,15 +135,15 @@ def main():
         if epoch % 1 == 0:
             print(f'epoch {epoch} loss = {epoch_loss}')
 
-    def accuracy(model, ds, pct):
+    def accuracy(model, ds, ok_error):
         correct = 0
         total = 0
         for val_data, label in ds:
             with torch.no_grad():
                 output = model(val_data)
             abs_delta = np.abs(output.item()-label.item())
-            max_allow = np.abs(pct*label.item())+0.1 #added 0.1 to compensate for small waves
-            if abs_delta < max_allow:
+            #max_allow = np.abs(pct*label.item())+0.1 #added 0.1 to compensate for small waves
+            if abs_delta < ok_error:
                 correct +=1
             else:
                 pass

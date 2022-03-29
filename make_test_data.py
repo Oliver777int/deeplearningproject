@@ -18,8 +18,8 @@ def create_data(rows, cols):
        # data = np.transpose(data)
         #data = torch.from_numpy(data)ds
     return data
-train_data = create_data(1000, 6)
-validation_data = create_data(1000,6)
+train_data = create_data(1000, 4)
+validation_data = create_data(1000,4)
 
 # file_path_train = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\train_data_file1.csv'
 # file_path_validation = r'C:\Users\pj2m1s\Simon\skola\deeplearningproject\validation_data_file1.csv'

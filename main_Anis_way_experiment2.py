@@ -14,17 +14,15 @@ save_model = True
 start_time = time.time()
 num_of_input = 3
 batch_size = 10000
-learning_rate = 0.0002
-number_of_epochs = 30
+learning_rate = 0.001
+number_of_epochs = 1000
 
-path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
-path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
+path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\model_anis_experiment2.pth'
+path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\model_anis_experiment2.pth'
 path_to_data = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\params.csv'
 train_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\train_data.csv')
 val_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\val_data.csv')
 # TODO plot histogram over the data to see the input spread
-
-
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
     print('Running on the GPU')
@@ -64,19 +62,19 @@ class CustomCsvDataset():
 class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.hid1 = torch.nn.Linear(num_of_input, 30)
+        self.hid1 = torch.nn.Linear(num_of_input, 10)
         #self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
-        self.hid2 = torch.nn.Linear(30, 30)
+        self.hid2 = torch.nn.Linear(10, 10)
         # self.drop2 = torch.nn.Dropout(0.25)
-        self.hid3 = torch.nn.Linear(30, 30)
-        self.hid4 = torch.nn.Linear(30, 30)
-        self.hid5 = torch.nn.Linear(30, 30)
-        self.hid6 = torch.nn.Linear(30, 30)
-        self.hid7 = torch.nn.Linear(30, 30)
-        self.hid8 = torch.nn.Linear(30, 30)
-        self.hid9 = torch.nn.Linear(30, 30)
-        self.hid10 = torch.nn.Linear(30, 30)
-        self.output = torch.nn.Linear(30, 1)
+        self.hid3 = torch.nn.Linear(10, 10)
+        self.hid4 = torch.nn.Linear(10, 10)
+        self.hid5 = torch.nn.Linear(10, 10)
+        self.hid6 = torch.nn.Linear(10, 10)
+        self.hid7 = torch.nn.Linear(10, 10)
+        self.hid8 = torch.nn.Linear(10, 10)
+        self.hid9 = torch.nn.Linear(10, 10)
+        self.hid10 = torch.nn.Linear(10, 10)
+        self.output = torch.nn.Linear(10, 1)
 
     def forward(self, x):
         z = torch.relu(self.hid1(x))
@@ -101,11 +99,6 @@ def main():
     np.random.seed(4)
 
     training_data = np.loadtxt(train_path, dtype=np.float32, delimiter=",", skiprows=1)
-    print(f'max SWH in training= {max(training_data[:, 3])}')
-    print(f'min SWH in training= {min(training_data[:, 3])}')
-    plt.hist(training_data[:, 3], bins=[0, 0.20, 0.40, 0.60, 0.80, 1, 1.20, 1.40, 1.50, 1.80, 2, 2.2, 2.4, 2.6])
-    plt.show()
-
     training_data = torch.from_numpy(training_data)
     train_data = CustomCsvDataset(training_data)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)

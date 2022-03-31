@@ -10,6 +10,7 @@ create_new_data = False
 train_data_frac = 0.8
 load_model = True
 save_model = True
+show_histogram = False
 
 start_time = time.time()
 num_of_input = 3
@@ -101,10 +102,10 @@ def main():
     np.random.seed(4)
 
     training_data = np.loadtxt(train_path, dtype=np.float32, delimiter=",", skiprows=1)
-    print(f'max SWH in training= {max(training_data[:, 3])}')
-    print(f'min SWH in training= {min(training_data[:, 3])}')
-    plt.hist(training_data[:, 3], bins=[0, 0.20, 0.40, 0.60, 0.80, 1, 1.20, 1.40, 1.50, 1.80, 2, 2.2, 2.4, 2.6])
-    plt.show()
+    if show_histogram:
+        bin = np.linspace(min(training_data[:, 3]), max(training_data[:, 3]), 100)
+        plt.hist(training_data[:, 3], bins=bin)
+        plt.show()
 
     training_data = torch.from_numpy(training_data)
     train_data = CustomCsvDataset(training_data)

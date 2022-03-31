@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 from matplotlib import style
 style.use("ggplot")
 from sklearn.model_selection import train_test_split
+
+import numpy as np
+# from torchvision.transforms import ToTensor
+import matplotlib.pyplot as plt
+from matplotlib import style
+style.use("ggplot")
+from sklearn.model_selection import train_test_split
 # from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 import torch
@@ -14,9 +21,10 @@ import torch.nn.functional as F
 import os
 from tifffile import imread
 import time
+from sklearn.metrics import mean_squared_error
 
 # Set to true if you want to build the data
-rebuild_data = True
+rebuild_data = False
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
     print('Running on the GPU')
@@ -26,7 +34,7 @@ else:
 
 
 class Build_Dataset():
-    sarbilder = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data'
+    sarbilder = r'D:\Sar_download3'
     count = 0
     training_data = []
 
@@ -39,7 +47,7 @@ class Build_Dataset():
                 subpxlimg = blockshaped(pxlimg, 50, 50)     # Subdivide one 200x200 image into 16 50x50 images
                 p = f.split('.tif')[0]
                 label = float(p.split('_')[5])
-                for i in range(16):
+                for i in range(64):
 
                     self.training_data.append([subpxlimg[i], label])
                     self.count += 1
@@ -56,12 +64,12 @@ class Build_Dataset():
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, (5, 5))    # Conv layer
-        self.batchnorm1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 64, (5, 5))   # Conv layer 2
-        self.batchnorm2 = nn.BatchNorm2d(64)
-        self.conv3 = nn.Conv2d(64, 128, (5, 5))  # Conv layer 3
-        self.batchnorm3 = nn.BatchNorm2d(128)
+        self.conv1 = nn.Conv2d(1, 16, (5, 5))    # Conv layer
+        self.batchnorm1 = nn.BatchNorm2d(16)
+        self.conv2 = nn.Conv2d(16, 32, (5, 5))   # Conv layer 2
+        self.batchnorm2 = nn.BatchNorm2d(32)
+        self.conv3 = nn.Conv2d(32, 64, (5, 5))  # Conv layer 3
+        self.batchnorm3 = nn.BatchNorm2d(64)
 
         # Intermediary part that finds the value of self._to_linear
         x = torch.randn(50, 50).view(-1, 1, 50, 50)
@@ -102,33 +110,38 @@ def test(size=32):
 
 
 def give_prediction(size=32):
-    random_start = np.random.randint(len(test_x)-size)
-    x, y = test_x[random_start:random_start+size], test_y[random_start:random_start+size]
+    random_start = np.random.randint(len(train_x)-size)
+    x, y = train_x[random_start:random_start+size], train_y[random_start:random_start+size]
     x, y = x.view(-1, 1, 50, 50).to(device), y.to(device)
-
+    #x, y = train_x, train_y
+    #x, y = x.view(-1, 1, 50, 50).to(device), y.to(device)
     outputs = net(x)
-    #result = np.array(outputs.cpu())
-    #y = np.array(y.cpu())
+    correct=0
+    total=0
+    for k in range(len(y)):
+        if abs(outputs.detach().cpu().numpy()[k]-y.detach().cpu().numpy()[k]) < 0.5:
+            correct+=1
+        total+=1
+    print("Accuracy:", round(correct / total, 3))
+    print("Total:", total)
+
     return outputs, y
 
 
 def train():
-    BATCH_SIZE = 200
-    EPOCHS = 15
+    BATCH_SIZE = 228
+    EPOCHS = 1
     with open(f'{MODEL_NAME}.log', 'a') as f:
         for epoch in range(EPOCHS):
             for i in tqdm(range(0, len(train_x), BATCH_SIZE)):
                 # print(i, i+BATCH_SIZE)
                 batch_x = train_x[i:i + BATCH_SIZE].view(-1, 1, 50, 50)
                 batch_y = train_y[i:i + BATCH_SIZE]
-
                 batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-
                 loss = fwd_pass(batch_x, batch_y, train=True)
                 if i % BATCH_SIZE/2 == 0:
                     val_loss = test(size=BATCH_SIZE)
                     f.write(f'{MODEL_NAME}, {round(time.time(), 3)}, {round(float(loss), 4)}, {round(float(val_loss), 4)}\n')
-
             print(f'Epoch: {epoch}. Loss: {loss}. Validation Loss: {val_loss}')
 
 
@@ -139,7 +152,6 @@ def fwd_pass(x, y, train=False):
     #result = np.array(outputs.cpu())
     #beta = np.array(y.cpu())
     loss = loss_function(outputs, y)
-
     if train:
         loss.backward()
         optimizer.step()
@@ -208,22 +220,28 @@ x = torch.Tensor(np.array([i[0] for i in training_data])).view(-1, 50, 50)
 y = torch.Tensor(np.array([i[1] for i in training_data])).view(-1, 1)
 
 train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=0.1)
-
+print('training length: ', len(train_x))
+print('training label: ',len(train_y))
+print('test length: ',len(test_x))
+print('test label: ',len(test_y))
 # print(len(train_x))
 # print(len(test_x))
 
 
 MODEL_NAME = f'model-{int(time.time())}'
 net = Net().to(device)
-optimizer = optim.Adam(net.parameters(), lr=0.001)
+optimizer = optim.Adam(net.parameters(), lr=0.00001)
 loss_function = nn.MSELoss()
 
 print(MODEL_NAME)
 train()
 create_loss_graph(MODEL_NAME)
-res, ans = give_prediction(70)
-res = res.detach().cpu().numpy()
-ans = ans.detach().cpu().numpy()
-plt.scatter(ans, res)
+output, input1 = give_prediction(1000)
+output = output.cpu().detach().numpy()
+input1 = input1.cpu().detach().numpy()
+
+plt.scatter(input1, output)
 plt.show()
 
+mse = mean_squared_error(input1, output)
+print(mse)

@@ -14,17 +14,13 @@ save_model = True
 start_time = time.time()
 num_of_input = 3
 batch_size = 10000
-learning_rate = 0.0002
-number_of_epochs = 30
-
-path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
-path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
+learning_rate = 0.005
+number_of_epochs = 100
+path_to_loaded_model = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\model_anis_experiment.pth'
 path_to_data = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\params.csv'
 train_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\train_data.csv')
 val_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\val_data.csv')
 # TODO plot histogram over the data to see the input spread
-
-
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
     print('Running on the GPU')
@@ -84,14 +80,6 @@ class Net(torch.nn.Module):
         z = torch.relu(self.hid2(z))
         # z = self.drop2(z)
         z = torch.relu(self.hid3(z))
-        z = torch.relu(self.hid4(z))
-        z = torch.relu(self.hid5(z))
-        z = torch.relu(self.hid6(z))
-        z = torch.relu(self.hid7(z))
-        z = torch.relu(self.hid8(z))
-        z = torch.relu(self.hid9(z))
-        z = torch.relu(self.hid10(z))
-
         z = self.output(z)
         return z
 
@@ -101,11 +89,6 @@ def main():
     np.random.seed(4)
 
     training_data = np.loadtxt(train_path, dtype=np.float32, delimiter=",", skiprows=1)
-    print(f'max SWH in training= {max(training_data[:, 3])}')
-    print(f'min SWH in training= {min(training_data[:, 3])}')
-    plt.hist(training_data[:, 3], bins=[0, 0.20, 0.40, 0.60, 0.80, 1, 1.20, 1.40, 1.50, 1.80, 2, 2.2, 2.4, 2.6])
-    plt.show()
-
     training_data = torch.from_numpy(training_data)
     train_data = CustomCsvDataset(training_data)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -118,7 +101,7 @@ def main():
     net = Net().to(device)
     # loads the old model
     if load_model:
-        net.load_state_dict(torch.load(path_to_load_from))
+        net.load_state_dict(torch.load(path_to_loaded_model))
         net.eval()
 
 
@@ -169,7 +152,7 @@ def main():
     val_acc = accuracy(net, val_data, ok_error)
     print(f'validation accuracy: {val_acc}')
     if save_model:
-        torch.save(net.state_dict(), path_to_save_model_to)
+        torch.save(net.state_dict(), path_to_loaded_model)
 
     end_time = time.time()
     print(f'time for the program to rum: {end_time-start_time}')

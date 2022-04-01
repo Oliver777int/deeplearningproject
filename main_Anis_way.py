@@ -10,13 +10,13 @@ create_new_data = False
 train_data_frac = 0.8
 load_model = True
 save_model = True
-show_histogram = False
+show_histogram = True
 
 start_time = time.time()
 num_of_input = 3
 batch_size = 10000
 learning_rate = 0.0002
-number_of_epochs = 30
+number_of_epochs = 4
 
 path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
 path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
@@ -157,8 +157,8 @@ def main():
             if abs_delta < ok_error:
                 correct +=1
             else:
-                pass
-                #print(f'got it wrong: val_data {val_data} label {label}, guessed {output}')
+                #pass
+                print(f'got it wrong: val_data {val_data} label {label}, guessed {output}')
             total += 1
         acc = correct/total
         return acc

@@ -8,14 +8,14 @@ from pathlib import Path
 import time
 create_new_data = False
 train_data_frac = 0.9
-load_model = False
+load_model = True
 save_model = True
 show_histogram = False
 
 start_time = time.time()
 num_of_input = 3
 batch_size = 10000
-learning_rate = 0.0002
+learning_rate = 0.0004
 number_of_epochs = 40
 
 
@@ -81,9 +81,7 @@ class Net(torch.nn.Module):
         z = torch.relu(self.hid2(z))
         z = self.drop2(z)
         z = torch.relu(self.hid3(z))
-        z = self.drop3(z)
         z = torch.relu(self.hid4(z))
-        z = self.drop4(z)
         z = self.output(z)
         return z
 
@@ -114,7 +112,7 @@ def main():
         net.eval()
 
     loss_func = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)
     net.train()
 
     for epoch in range(number_of_epochs):
@@ -157,8 +155,8 @@ def main():
 
     net.eval()
     ok_error = 0.2
-    train_acc = accuracy(net, train_data, ok_error)
-    print(f'train accuracy: {train_acc}')
+    #train_acc = accuracy(net, train_data, ok_error)
+    #print(f'train accuracy: {train_acc}')
     val_acc = accuracy(net, val_data, ok_error)
     print(f'validation accuracy: {val_acc}')
     if save_model:

@@ -16,7 +16,7 @@ start_time = time.time()
 num_of_input = 3
 batch_size = 10000
 learning_rate = 0.0002
-number_of_epochs = 40
+number_of_epochs = 20
 
 
 
@@ -68,9 +68,9 @@ class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.hid1 = torch.nn.Linear(num_of_input, 30)
-        #self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
+        self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
         self.hid2 = torch.nn.Linear(30, 30)
-        # self.drop2 = torch.nn.Dropout(0.25)
+        #self.drop2 = torch.nn.Dropout(0.25)
         self.hid3 = torch.nn.Linear(30, 30)
         self.hid4 = torch.nn.Linear(30, 30)
         self.hid5 = torch.nn.Linear(30, 30)

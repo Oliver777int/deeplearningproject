@@ -7,20 +7,25 @@ from numpy.random import RandomState
 from pathlib import Path
 import time
 create_new_data = False
-train_data_frac = 0.8
-load_model = True
+train_data_frac = 0.9
+load_model = False
 save_model = True
+show_histogram = False
 
 start_time = time.time()
 num_of_input = 3
 batch_size = 10000
-learning_rate = 0.005
-number_of_epochs = 100
-path_to_loaded_model = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\model_anis_experiment.pth'
+learning_rate = 0.0002
+number_of_epochs = 40
+
+
+
+path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis_experiment.pth'
+path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis_experiment.pth'
 path_to_data = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\params.csv'
 train_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\train_data.csv')
 val_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\val_data.csv')
-# TODO plot histogram over the data to see the input spread
+
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
     print('Running on the GPU')
@@ -61,25 +66,24 @@ class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.hid1 = torch.nn.Linear(num_of_input, 30)
-        #self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
-        self.hid2 = torch.nn.Linear(30, 30)
-        # self.drop2 = torch.nn.Dropout(0.25)
-        self.hid3 = torch.nn.Linear(30, 30)
-        self.hid4 = torch.nn.Linear(30, 30)
-        self.hid5 = torch.nn.Linear(30, 30)
-        self.hid6 = torch.nn.Linear(30, 30)
-        self.hid7 = torch.nn.Linear(30, 30)
-        self.hid8 = torch.nn.Linear(30, 30)
-        self.hid9 = torch.nn.Linear(30, 30)
-        self.hid10 = torch.nn.Linear(30, 30)
-        self.output = torch.nn.Linear(30, 1)
+        self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
+        self.hid2 = torch.nn.Linear(30, 20)
+        self.drop2 = torch.nn.Dropout(0.25)
+        self.hid3 = torch.nn.Linear(20, 25)
+        self.drop3 = torch.nn.Dropout(0.25)
+        self.hid4 = torch.nn.Linear(25, 10)
+        self.drop4 = torch.nn.Dropout(0.25)
+        self.output = torch.nn.Linear(10, 1)
 
     def forward(self, x):
         z = torch.relu(self.hid1(x))
-        #z = self.drop1(z)
+        z = self.drop1(z)
         z = torch.relu(self.hid2(z))
-        # z = self.drop2(z)
+        z = self.drop2(z)
         z = torch.relu(self.hid3(z))
+        z = self.drop3(z)
+        z = torch.relu(self.hid4(z))
+        z = self.drop4(z)
         z = self.output(z)
         return z
 
@@ -89,6 +93,11 @@ def main():
     np.random.seed(4)
 
     training_data = np.loadtxt(train_path, dtype=np.float32, delimiter=",", skiprows=1)
+    if show_histogram:
+        bin = np.linspace(min(training_data[:, 3]), max(training_data[:, 3]), 100)
+        plt.hist(training_data[:, 3], bins=bin)
+        plt.show()
+
     training_data = torch.from_numpy(training_data)
     train_data = CustomCsvDataset(training_data)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -101,9 +110,8 @@ def main():
     net = Net().to(device)
     # loads the old model
     if load_model:
-        net.load_state_dict(torch.load(path_to_loaded_model))
+        net.load_state_dict(torch.load(path_to_load_from))
         net.eval()
-
 
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
@@ -128,6 +136,8 @@ def main():
         if epoch % 1 == 0:
             print(f'epoch {epoch} loss = {epoch_loss}')
 
+    end_time = time.time()
+    print(f'time for the training: {end_time - start_time}')
     def accuracy(model, ds, ok_error):
         correct = 0
         total = 0
@@ -152,9 +162,7 @@ def main():
     val_acc = accuracy(net, val_data, ok_error)
     print(f'validation accuracy: {val_acc}')
     if save_model:
-        torch.save(net.state_dict(), path_to_loaded_model)
+        torch.save(net.state_dict(), path_to_save_model_to)
 
-    end_time = time.time()
-    print(f'time for the program to rum: {end_time-start_time}')
 if __name__ == '__main__':
     main()

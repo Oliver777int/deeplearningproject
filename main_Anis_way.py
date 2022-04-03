@@ -10,13 +10,15 @@ create_new_data = False
 train_data_frac = 0.8
 load_model = True
 save_model = True
-show_histogram = True
+show_histogram = False
 
 start_time = time.time()
 num_of_input = 3
 batch_size = 10000
 learning_rate = 0.0002
-number_of_epochs = 4
+number_of_epochs = 40
+
+
 
 path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
 path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
@@ -122,7 +124,6 @@ def main():
         net.load_state_dict(torch.load(path_to_load_from))
         net.eval()
 
-
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
     net.train()
@@ -146,6 +147,8 @@ def main():
         if epoch % 1 == 0:
             print(f'epoch {epoch} loss = {epoch_loss}')
 
+    end_time = time.time()
+    print(f'time for the training: {end_time - start_time}')
     def accuracy(model, ds, ok_error):
         correct = 0
         total = 0
@@ -157,8 +160,8 @@ def main():
             if abs_delta < ok_error:
                 correct +=1
             else:
-                #pass
-                print(f'got it wrong: val_data {val_data} label {label}, guessed {output}')
+                pass
+                #print(f'got it wrong: val_data {val_data} label {label}, guessed {output}')
             total += 1
         acc = correct/total
         return acc
@@ -172,7 +175,5 @@ def main():
     if save_model:
         torch.save(net.state_dict(), path_to_save_model_to)
 
-    end_time = time.time()
-    print(f'time for the program to rum: {end_time-start_time}')
 if __name__ == '__main__':
     main()

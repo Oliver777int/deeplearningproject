@@ -18,8 +18,9 @@ from sklearn.metrics import mean_squared_error
 style.use("ggplot")
 
 # Set to true if you want to build the data
-rebuild_data = False
-load_model = True
+rebuild_data = True
+load_model = False
+show_histogram = False
 
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
@@ -33,6 +34,7 @@ class Build_Dataset():
     sarbilder = r'D:\CNN_storage\Balanced_dataset_sep_2021_mini'
     count = 0
     training_data = []
+    saved_numpy_arrays=1
 
     def make_training_data(self):
         for f in tqdm(os.listdir(self.sarbilder)):
@@ -47,13 +49,22 @@ class Build_Dataset():
 
                     self.training_data.append([subpxlimg[i], label])
                     self.count += 1
+                    if self.count % 100000 == 0:
+                        np.random.shuffle(self.training_data)
+                        np.save('training_data_' + str(self.saved_numpy_arrays) + '.npy', self.training_data)
+                        self.training_data = []
+                        self.saved_numpy_arrays += 1
 
             except Exception as e:
                 print(str(e))
 
         np.random.shuffle(self.training_data)
-        np.save('training_data.npy', self.training_data)
+        np.save('training_data_' + str(self.saved_numpy_arrays) + '.npy', self.training_data)
+        np.save('saved_numpy_arrays.npy', self.saved_numpy_arrays)
         print('antal sarbilder i dataset = ', self.count)
+        print('antal numpy arrayer sparade var', self.saved_numpy_arrays)
+
+
 
 
 # The neural network with 3 conv and 2 fully connected layers
@@ -139,7 +150,7 @@ def give_prediction(size=32, train_prediction=False):
 
 def train():
     BATCH_SIZE = 1000
-    EPOCHS = 5
+    EPOCHS = 8
     with open(f'{MODEL_NAME}.log', 'a') as f:
         for epoch in range(EPOCHS):
             lossarray = []
@@ -234,12 +245,21 @@ def load_dataset():
     if rebuild_data:
         make_data = Build_Dataset()
         make_data.make_training_data()
+    filenames = []
+    for i in range(np.load('saved_numpy_arrays.npy')):
+        filenames.append('training_data_' + str(i+1) + '.npy')
 
-    training_data = np.load('training_data.npy', allow_pickle=True)  # Load in pixel images and labels
+    training_data = [np.load(f, allow_pickle=True) for f in filenames]  # Load in pixel images and labels
+    training_data = np.concatenate(training_data)
 
     # Plot the first SAR pixel image using the code below
     # plt.imshow(training_data[0][0], cmap='gray')
     # plt.show()
+
+    if show_histogram:
+        bin = np.linspace(min(np.array([i[1] for i in training_data])), max(np.array([i[1] for i in training_data])), 60)
+        plt.hist(np.array([i[1] for i in training_data]), bins=bin)
+        plt.show()
 
     # Puts data and labels in torch format
     x = torch.Tensor(np.array([i[0] for i in training_data])).view(-1, 50, 50)
@@ -257,8 +277,8 @@ def load_dataset():
 
 MODEL_NAME = f'model-{int(time.time())}'
 print("the model name is ", MODEL_NAME)
-
 train_x, test_x, train_y, test_y = load_dataset()
+
 
 # Generate an instance of the Neural network
 net = Net().to(device)

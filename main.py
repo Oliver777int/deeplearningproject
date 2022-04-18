@@ -1,26 +1,21 @@
-# from torchvision.transforms import ToTensor
 import numpy as np
-# from torchvision.transforms import ToTensor
 import matplotlib.pyplot as plt
 from matplotlib import style
 from sklearn.model_selection import train_test_split
-# from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 import torch
 import torch.optim as optim
-# from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import os
 from tifffile import imread
 import time
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
+# from sklearn.metrics import accuracy_score
+# from torch.autograd import Variable
+# from torchvision.transforms import ToTensor
 style.use("ggplot")
-
-# Set to true if you want to build the data
-rebuild_data = True
-load_model = False
-show_histogram = False
 
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
@@ -31,7 +26,7 @@ else:
 
 
 class Build_Dataset():
-    sarbilder = r'D:\CNN_storage\Balanced_dataset_sep_2021_mini'
+    sarbilder = r'D:\CNN_storage\Balanced_dataset_sep_2021'
     count = 0
     training_data = []
     saved_numpy_arrays=1
@@ -65,8 +60,6 @@ class Build_Dataset():
         print('antal numpy arrayer sparade var', self.saved_numpy_arrays)
 
 
-
-
 # The neural network with 3 conv and 2 fully connected layers
 class Net(nn.Module):
     def __init__(self):
@@ -82,9 +75,9 @@ class Net(nn.Module):
         x = torch.randn(50, 50).view(-1, 1, 50, 50)
         self._to_linear = None
         self.convs(x)
-        self.fc1 = nn.Linear(self._to_linear, 1080)  # Fully connected layer 1
-        self.fc2 = nn.Linear(1080, 1)                # Fully connected layer 2
-
+        self.fc1 = nn.Linear(self._to_linear, 512)  # Fully connected layer 1
+        self.fc2 = nn.Linear(512, 1)                # Fully connected layer 2
+        #self.dropout = nn.Dropout(0.25)
     def convs(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
         x = self.batchnorm1(x)
@@ -96,13 +89,14 @@ class Net(nn.Module):
         # print(x[0].shape)
         if self._to_linear is None:
             self._to_linear = x[0].shape[0]*x[0].shape[1]*x[0].shape[2]
-            print(self._to_linear)
+            # print(self._to_linear) # Input size of first fully connected layer
         return x
 
     def forward(self, x):
         x = self.convs(x)
         x = x.view(-1, self._to_linear)
         x = F.relu(self.fc1(x))
+        #x = self.dropout(x)
         x = self.fc2(x)
         return x
 
@@ -134,23 +128,23 @@ def give_prediction(size=32, train_prediction=False):
     correct2=0
     total=0
     for k in range(len(y)):
-        if abs(outputs.detach().cpu().numpy()[k]-y.detach().cpu().numpy()[k]) < 0.1:
+        if abs(outputs.detach().cpu().numpy()[k]-y.detach().cpu().numpy()[k]) < 1:
             correct += 1
         if abs(outputs.detach().cpu().numpy()[k] - y.detach().cpu().numpy()[k]) < 0.2:
             correct1 += 1
         if abs(outputs.detach().cpu().numpy()[k]-y.detach().cpu().numpy()[k]) < 0.5:
             correct2 += 1
         total+=1
-    print("Accuracy within 10 centimeters:", round(correct / total, 3))
+
     print("Accuracy within 20 centmeters:", round(correct1 / total, 3))
     print("Accuracy within 50 centimeters:", round(correct2 / total, 3))
-
+    print("Accuracy within 100 centimeters:", round(correct / total, 3))
     return outputs, y
 
 
 def train():
-    BATCH_SIZE = 1000
-    EPOCHS = 8
+    BATCH_SIZE = 750
+    EPOCHS = 1
     with open(f'{MODEL_NAME}.log', 'a') as f:
         for epoch in range(EPOCHS):
             lossarray = []
@@ -175,8 +169,7 @@ def fwd_pass(x, y, train=False):
     if train:
         net.zero_grad()
     outputs = net(x)
-    #result = np.array(outputs.cpu())
-    #beta = np.array(y.cpu())
+
     loss = loss_function(outputs, y)
     if train:
         loss.backward()
@@ -249,7 +242,7 @@ def load_dataset():
     for i in range(np.load('saved_numpy_arrays.npy')):
         filenames.append('training_data_' + str(i+1) + '.npy')
 
-    training_data = [np.load(f, allow_pickle=True) for f in filenames]  # Load in pixel images and labels
+    training_data = [np.load(f, allow_pickle=True) for f in tqdm(filenames)]  # Load in pixel images and labels
     training_data = np.concatenate(training_data)
 
     # Plot the first SAR pixel image using the code below
@@ -275,10 +268,16 @@ def load_dataset():
     return train_x, test_x, train_y, test_y
 
 
+##########################################################################
+
+rebuild_data = False
+load_model = True
+show_histogram = False
+run_training = False
+
 MODEL_NAME = f'model-{int(time.time())}'
 print("the model name is ", MODEL_NAME)
 train_x, test_x, train_y, test_y = load_dataset()
-
 
 # Generate an instance of the Neural network
 net = Net().to(device)
@@ -288,14 +287,15 @@ loss_function = nn.MSELoss()
 if load_model:
     load_checkpoint(torch.load("my_checkpoint.pth.tar"))
 
-#train()  # Trains the model
-#create_loss_graph(MODEL_NAME)  # Generate loss graph
+if run_training:
+    train()  # Trains the model
+    create_loss_graph(MODEL_NAME)  # Generate loss graph
 
 checkpoint = {'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()}
 save_checkpoint(checkpoint)
 
 # Plot targets on x-axis and model prediction on y-axis
-output, input1 = give_prediction(1000, train_prediction=True)
+output, input1 = give_prediction(3000, train_prediction=False)
 output = output.cpu().detach().numpy()
 input1 = input1.cpu().detach().numpy()
 
@@ -305,7 +305,17 @@ plt.xlabel("Real significant wave height [m]")
 plt.ylabel("Predicted significant wave height [m]")
 plt.show()
 
-# Calculates mean squared error manually
-# mse = mean_squared_error(input1, output)
-# print(mse)
+# Calculates RMSE, R-value and MAE
+mse = mean_squared_error(input1, output)
+rmse = np.sqrt(mse)
+print(f"RMSE: {rmse:.3f}")
+
+res = r2_score(input1, output)
+res = np.sqrt(res)
+print(f"R-value: {res:.3f}")
+
+mean_absolute_error = np.mean(np.abs(output-input1))
+print(f"Mean absolute error: {mean_absolute_error:.3f}")
+
+
 

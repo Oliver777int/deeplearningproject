@@ -6,23 +6,25 @@ import pandas as pd
 from numpy.random import RandomState
 from pathlib import Path
 import time
+from tqdm import tqdm
 create_new_data = False
 train_data_frac = 0.8
 load_model = True
 save_model = True
 show_histogram = False
 
+
 start_time = time.time()
 num_of_input = 3
 batch_size = 10000
-learning_rate = 0.0002
-number_of_epochs = 30
+learning_rate = 0.0001
+number_of_epochs = 100
 
-path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
-path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
-path_to_data = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\params.csv'
-train_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\train_data.csv')
-val_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\val_data.csv')
+path_to_save_model_to = r'D:\CNN_storage\Saved ANN Models\model_anis.pth'
+path_to_load_from = r'D:\CNN_storage\Saved ANN Models\model_anis.pth'
+path_to_data = r'D:\CNN_storage\CSV_output\params_sep_balanced.csv'
+train_path = Path(r'D:\CNN_storage\CSV_output\train_data.csv')
+val_path = Path(r'D:\CNN_storage\CSV_output\val_data.csv')
 # TODO plot histogram over the data to see the input spread
 
 
@@ -149,7 +151,7 @@ def main():
     def accuracy(model, ds, ok_error):
         correct = 0
         total = 0
-        for val_data, label in ds:
+        for val_data, label in tqdm(ds):
             with torch.no_grad():
                 output = model(val_data)
             abs_delta = np.abs(output.item()-label.item())
@@ -164,7 +166,7 @@ def main():
         return acc
 
     net.eval()
-    ok_error = 0.2
+    ok_error = 0.5
     train_acc = accuracy(net, train_data, ok_error)
     print(f'train accuracy: {train_acc}')
     val_acc = accuracy(net, val_data, ok_error)

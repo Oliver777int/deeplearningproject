@@ -1,13 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import scipy.signal
 #os.environ['PROJ_LIB']= 'C:\Anaconda4\envs\snap\Library\share'
 import pandas as pd
 import shutil
 
 #Folder where input data is stored
-path=os.chdir('D:\CNN_storage\Balanced_dataset_sep_2021')
-lista = os.listdir('D:\CNN_storage\Balanced_dataset_sep_2021')
+path=os.chdir('D:\CNN_storage\s1_output')
+lista = os.listdir('D:\CNN_storage\s1_output')
+
+
+
+
+
 
 waveheightarray = []
 wavearray = []
@@ -64,7 +70,12 @@ print(Q[0])
 #print('0-100')
 #print(np.sum(Q[0][20]))
 
-#a = [1, 2, 5, 4, 3, 6, 7, 8, 9]
+a = [1, 2, 5, 4, 3, 6, 7, 8, 9]
+a = np.array(a)
+for i in range(len(a)):
+    print(a[i])
+
+print(np.shape(a))
 #d = np.sort(a)
 #np.asarray(a)
 #b = np.asarray([2, 4])

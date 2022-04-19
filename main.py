@@ -29,7 +29,7 @@ class Build_Dataset():
     sarbilder = r'D:\CNN_storage\Balanced_dataset_sep_2021'
     count = 0
     training_data = []
-    saved_numpy_arrays=1
+    saved_numpy_arrays = 1
 
     def make_training_data(self):
         for f in tqdm(os.listdir(self.sarbilder)):
@@ -78,6 +78,7 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(self._to_linear, 512)  # Fully connected layer 1
         self.fc2 = nn.Linear(512, 1)                # Fully connected layer 2
         #self.dropout = nn.Dropout(0.25)
+
     def convs(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
         x = self.batchnorm1(x)
@@ -110,6 +111,56 @@ def test(size=32):
     return val_loss
 
 
+def full_evaluation():
+    output_array = []
+    input_array = test_y.detach().numpy()
+    for i in tqdm(range(0, len(test_x), BATCH_SIZE)):
+
+        batch_x = test_x[i:i + BATCH_SIZE].view(-1, 1, 50, 50)
+        batch_x = batch_x.to(device)
+        with torch.no_grad():
+            outputs = net(batch_x)
+        outputs = outputs.detach().cpu().numpy()
+
+        for j in range(len(outputs)):
+            output_array.append(outputs[j])
+
+    correct = 0
+    correct1 = 0
+    correct2 = 0
+    total = 0
+    for k in range(len(output_array)):
+        if abs(output_array[k]-input_array[k]) < 1:
+            correct += 1
+        if abs(output_array[k] - input_array[k]) < 0.2:
+            correct1 += 1
+        if abs(output_array[k]-input_array[k]) < 0.5:
+            correct2 += 1
+        total += 1
+
+    print("Accuracy within 20 centmeters:", round(correct1 / total, 3))
+    print("Accuracy within 50 centimeters:", round(correct2 / total, 3))
+    print("Accuracy within 100 centimeters:", round(correct / total, 3))
+
+    # Calculates RMSE, R-value and MAE
+    mse = mean_squared_error(input_array, output_array)
+    rmse = np.sqrt(mse)
+    print(f"RMSE for full validation set: {rmse:.3f}")
+
+    res = r2_score(input_array, output_array)
+    res = np.sqrt(res)
+    print(f"R-value for full validation set: {res:.3f}")
+
+    mean_absolute_error = np.mean(np.abs(output_array - input_array))
+    print(f"Mean absolute error: {mean_absolute_error:.3f}")
+
+    plt.scatter(input_array, output_array)
+    plt.title(f"Prediction on the entire Validation set")
+    plt.xlabel("Real significant wave height [m]")
+    plt.ylabel("Predicted significant wave height [m]")
+    plt.show()
+
+
 def give_prediction(size=32, train_prediction=False):
     if train_prediction:
         random_start = np.random.randint(len(train_x) - size)
@@ -123,10 +174,10 @@ def give_prediction(size=32, train_prediction=False):
         print("Prediction on the validation set")
     with torch.no_grad():
         outputs = net(x)
-    correct=0
-    correct1=0
-    correct2=0
-    total=0
+    correct = 0
+    correct1 = 0
+    correct2 = 0
+    total = 0
     for k in range(len(y)):
         if abs(outputs.detach().cpu().numpy()[k]-y.detach().cpu().numpy()[k]) < 1:
             correct += 1
@@ -134,17 +185,24 @@ def give_prediction(size=32, train_prediction=False):
             correct1 += 1
         if abs(outputs.detach().cpu().numpy()[k]-y.detach().cpu().numpy()[k]) < 0.5:
             correct2 += 1
-        total+=1
+        total += 1
 
     print("Accuracy within 20 centmeters:", round(correct1 / total, 3))
     print("Accuracy within 50 centimeters:", round(correct2 / total, 3))
     print("Accuracy within 100 centimeters:", round(correct / total, 3))
-    return outputs, y
+
+    outputs = outputs.cpu().detach().numpy()
+    inputs = y.cpu().detach().numpy()
+
+    plt.scatter(inputs, outputs)
+    title = 'Training set' if training_prediction else 'Validation set'
+    plt.title(f"Prediction on a small part of the {title}")
+    plt.xlabel("Real significant wave height [m]")
+    plt.ylabel("Predicted significant wave height [m]")
+    plt.show()
 
 
 def train():
-    BATCH_SIZE = 750
-    EPOCHS = 1
     with open(f'{MODEL_NAME}.log', 'a') as f:
         for epoch in range(EPOCHS):
             lossarray = []
@@ -186,8 +244,8 @@ def blockshaped(arr, nrows, ncols):
     each subblock preserving the "physical" layout of arr.
     """
     h, w = arr.shape
-    #assert h % nrows == 0, f"{h} rows is not evenly divisible by {nrows}"
-    #assert w % ncols == 0, f"{w} cols is not evenly divisible by {ncols}"
+    # assert h % nrows == 0, f"{h} rows is not evenly divisible by {nrows}"
+    # assert w % ncols == 0, f"{w} cols is not evenly divisible by {ncols}"
     return (arr.reshape(h//nrows, nrows, -1, ncols)
                .swapaxes(1, 2)
                .reshape(-1, nrows, ncols))
@@ -270,18 +328,28 @@ def load_dataset():
 
 ##########################################################################
 
-rebuild_data = False
-load_model = True
-show_histogram = False
-run_training = False
+rebuild_data = False            # Rebuilds the entire dataset
+load_model = True               # Load the previous model, or a previously saved one by replacing my_checkpoint.pth.tar
+save_model = True               # Saves the model as my_checkpoint.pth.tar in project directory
+show_histogram = False          # Shows a Histogram of the significant wave height
+run_training = False            # Train the model
+fully_evaluate_model = True     # Fully evaluates the model
+training_prediction = False     # Predict on the Training set instead of the validation set
+do_mini_prediction = False      # Only predict on a small portion of the model (If full evaluation takes too long)
+BATCH_SIZE = 750
+EPOCHS = 1
+learning_rate = 0.0001
+
 
 MODEL_NAME = f'model-{int(time.time())}'
 print("the model name is ", MODEL_NAME)
+
+# Load or Generates the dataset
 train_x, test_x, train_y, test_y = load_dataset()
 
 # Generate an instance of the Neural network
 net = Net().to(device)
-optimizer = optim.Adam(net.parameters(), lr=0.0001)
+optimizer = optim.Adam(net.parameters(), lr=learning_rate)
 loss_function = nn.MSELoss()
 
 if load_model:
@@ -291,31 +359,17 @@ if run_training:
     train()  # Trains the model
     create_loss_graph(MODEL_NAME)  # Generate loss graph
 
-checkpoint = {'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()}
-save_checkpoint(checkpoint)
+if save_model:
+    checkpoint = {'state_dict': net.state_dict(), 'optimizer': optimizer.state_dict()}
+    save_checkpoint(checkpoint)
 
-# Plot targets on x-axis and model prediction on y-axis
-output, input1 = give_prediction(3000, train_prediction=False)
-output = output.cpu().detach().numpy()
-input1 = input1.cpu().detach().numpy()
+if fully_evaluate_model:
+    full_evaluation()
 
-plt.scatter(input1, output)
-plt.title("Prediction to target plot")
-plt.xlabel("Real significant wave height [m]")
-plt.ylabel("Predicted significant wave height [m]")
-plt.show()
+if do_mini_prediction:
+    give_prediction(3000, train_prediction=training_prediction)
 
-# Calculates RMSE, R-value and MAE
-mse = mean_squared_error(input1, output)
-rmse = np.sqrt(mse)
-print(f"RMSE: {rmse:.3f}")
 
-res = r2_score(input1, output)
-res = np.sqrt(res)
-print(f"R-value: {res:.3f}")
-
-mean_absolute_error = np.mean(np.abs(output-input1))
-print(f"Mean absolute error: {mean_absolute_error:.3f}")
 
 
 

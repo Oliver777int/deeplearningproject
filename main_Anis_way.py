@@ -6,22 +6,23 @@ import pandas as pd
 from numpy.random import RandomState
 from pathlib import Path
 import time
+
 create_new_data = False
 train_data_frac = 0.8
 load_model = True
 save_model = True
 show_histogram = False
+show_val_acc = True
+show_train_acc = False
 
-start_time = time.time()
-num_of_input = 3
+num_of_input = 4
 batch_size = 10000
-learning_rate = 0.0002
+learning_rate = 0.00005
 number_of_epochs = 20
+start_time = time.time()
 
-
-
-path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
-path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis.pth'
+path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis4.pth'
+path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis4.pth'
 path_to_data = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\params.csv'
 train_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\train_data.csv')
 val_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\val_data.csv')
@@ -35,13 +36,22 @@ else:
     device = torch.device("cpu")
     print('Running on the CPU')
 
+# TODO visulize new features https://www.kaggle.com/code/ryanholbrook/creating-features
 if create_new_data:
     df = pd.read_csv(path_to_data, names=['mean', 'var', 'azm', 'SWH', 'direction'])
 
     # Removes null values
     df.drop(df[df['SWH'].isnull()].index, inplace = True)
-
     rng = RandomState(4)
+    df['mean'] = (df['mean'] - df['mean'].mean()) / (df['mean'].std())
+    df['var'] = (df['var'] - df['var'].mean()) / (df['var'].std())
+    df['mean_divided_var'] = df['mean']/df['var']
+    df['mean_times_var'] = df['mean']*df['var']
+
+    df['mean_divided_var'] = (df['mean_divided_var']-df['mean_divided_var'].mean())/(df['mean_divided_var'].std())
+    df['mean_times_var'] = (df['mean_times_var'] - df['mean_times_var'].mean()) / (df['mean_times_var'].std())
+    df = df[['mean', 'var', 'mean_divided_var', 'mean_times_var', 'SWH']]
+    #df = df[['mean', 'var', 'SWH']]
     train = df.sample(frac=train_data_frac, random_state=rng)
     test = df.loc[~df.index.isin(train.index)]
 
@@ -50,8 +60,10 @@ if create_new_data:
     train.to_csv(train_path, index=False)
     test.to_csv(val_path, index=False)
 
-# TODO now only height and not wave direction
-# TODO test a different loss function
+
+
+
+
 class CustomCsvDataset():
     def __init__(self, dataset):
         self.dataset = dataset.to(device)
@@ -60,41 +72,30 @@ class CustomCsvDataset():
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        input_data = self.dataset[idx, 0:(self.dataset.size(1) - 2)]
-        label = self.dataset[idx, self.dataset.size(1) - 2]
+        input_data = self.dataset[idx, 0:(self.dataset.size(1) - 1)]
+        label = self.dataset[idx, self.dataset.size(1) - 1]
         return input_data, label
 
 class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.hid1 = torch.nn.Linear(num_of_input, 30)
-        self.drop1 = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
+        #self.drop = torch.nn.Dropout(0.25) # add dropout if the model starts to overfit
         self.hid2 = torch.nn.Linear(30, 30)
-        #self.drop2 = torch.nn.Dropout(0.25)
         self.hid3 = torch.nn.Linear(30, 30)
-        self.hid4 = torch.nn.Linear(30, 30)
-        self.hid5 = torch.nn.Linear(30, 30)
-        self.hid6 = torch.nn.Linear(30, 30)
-        self.hid7 = torch.nn.Linear(30, 30)
-        self.hid8 = torch.nn.Linear(30, 30)
-        self.hid9 = torch.nn.Linear(30, 30)
-        self.hid10 = torch.nn.Linear(30, 30)
         self.output = torch.nn.Linear(30, 1)
 
     def forward(self, x):
         z = torch.relu(self.hid1(x))
-        #z = self.drop1(z)
         z = torch.relu(self.hid2(z))
-        # z = self.drop2(z)
         z = torch.relu(self.hid3(z))
-        z = torch.relu(self.hid4(z))
-        z = torch.relu(self.hid5(z))
-        z = torch.relu(self.hid6(z))
-        z = torch.relu(self.hid7(z))
-        z = torch.relu(self.hid8(z))
-        z = torch.relu(self.hid9(z))
-        z = torch.relu(self.hid10(z))
-
+        z = torch.relu(self.hid3(z))
+        z = torch.relu(self.hid3(z))
+        z = torch.relu(self.hid3(z))
+        z = torch.relu(self.hid3(z))
+        z = torch.relu(self.hid3(z))
+        z = torch.relu(self.hid3(z))
+        z = torch.relu(self.hid3(z))
         z = self.output(z)
         return z
 
@@ -125,7 +126,7 @@ def main():
         net.eval()
 
     loss_func = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=learning_rate)
     net.train()
 
     for epoch in range(number_of_epochs):
@@ -168,10 +169,12 @@ def main():
 
     net.eval()
     ok_error = 0.2
-    train_acc = accuracy(net, train_data, ok_error)
-    print(f'train accuracy: {train_acc}')
-    val_acc = accuracy(net, val_data, ok_error)
-    print(f'validation accuracy: {val_acc}')
+    if show_train_acc:
+        train_acc = accuracy(net, train_data, ok_error)
+        print(f'train accuracy: {train_acc}')
+    if show_val_acc:
+        val_acc = accuracy(net, val_data, ok_error)
+        print(f'validation accuracy: {val_acc}')
     if save_model:
         torch.save(net.state_dict(), path_to_save_model_to)
 

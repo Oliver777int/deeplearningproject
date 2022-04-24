@@ -17,15 +17,15 @@ show_train_acc = False
 
 num_of_input = 4
 batch_size = 10000
-learning_rate = 0.00005
-number_of_epochs = 20
+learning_rate = 0.000001
+number_of_epochs = 40
 start_time = time.time()
 
-path_to_save_model_to = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis4.pth'
-path_to_load_from = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\saved_models\model_anis4.pth'
-path_to_data = r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\params.csv'
-train_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\train_data.csv')
-val_path = Path(r'C:\Users\User\OneDrive\Skola\KEX\deeplearningproject\data\val_data.csv')
+path_to_save_model_to = r'saved_models\model_anis4.pth'
+path_to_load_from = r'saved_models\model_anis4.pth'
+path_to_data = r'data\params.csv'
+train_path = Path(r'data\train_data.csv')
+val_path = Path(r'data\val_data.csv')
 # TODO plot histogram over the data to see the input spread
 
 

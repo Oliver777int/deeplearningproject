@@ -7,18 +7,18 @@ from numpy.random import RandomState
 from pathlib import Path
 import time
 
-create_new_data = True
+create_new_data = False
 train_data_frac = 0.8
-load_model = False
+load_model = True
 save_model = True
-show_histogram = True
+show_histogram = False
 show_val_acc = True
 show_train_acc = True
 
 num_of_input = 4
 batch_size = 10000
-learning_rate = 0.01
-number_of_epochs = 50
+learning_rate = 0.00001
+number_of_epochs = 200
 start_time = time.time()
 
 path_to_save_model_to = r'saved_models\model_anis5.pth'
@@ -26,6 +26,7 @@ path_to_load_from = r'saved_models\model_anis5.pth'
 path_to_data = r'data\params20220425.csv'
 train_path = Path(r'data\train_data.csv')
 val_path = Path(r'data\val_data.csv')
+
 
 
 if torch.cuda.is_available():
@@ -37,7 +38,7 @@ else:
 
 
 if create_new_data:
-    df = pd.read_csv(path_to_data, names=['mean', 'var', 'SWH'])
+    df = pd.read_csv(path_to_data, names=['SWH', 'mean', 'var'])
 
     # Removes null values
     df.drop(df[df['SWH'].isnull()].index, inplace=True)
@@ -104,7 +105,7 @@ def main():
     training_data = np.loadtxt(train_path, dtype=np.float32, delimiter=",", skiprows=1)
     if show_histogram:
         bin = np.linspace(0, 7, 100)
-        plt.hist(training_data[:, 3], bins=bin)
+        plt.hist(training_data[:, 4], bins=bin)
         plt.show()
 
     training_data = torch.from_numpy(training_data)
@@ -153,10 +154,11 @@ def main():
         for val_data, label in ds:
             with torch.no_grad():
                 output = model(val_data)
+                # print(output, label)
             abs_delta = np.abs(output.item()-label.item())
             #max_allow = np.abs(pct*label.item())+0.1 #added 0.1 to compensate for small waves
             if abs_delta < ok_error:
-                correct +=1
+                correct += 1
             else:
                 pass
                 #print(f'got it wrong: val_data {val_data} label {label}, guessed {output}')
@@ -171,7 +173,10 @@ def main():
         print(f'train accuracy: {train_acc}')
     if show_val_acc:
         val_acc = accuracy(net, val_data, ok_error)
-        print(f'validation accuracy: {val_acc}')
+        print(f'validation (0.2m) accuracy: {val_acc}')
+    if show_val_acc:
+        val_acc = accuracy(net, val_data, 1)
+        print(f'validation (1m) accuracy: {val_acc}')
     if save_model:
         torch.save(net.state_dict(), path_to_save_model_to)
 

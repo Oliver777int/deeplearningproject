@@ -7,26 +7,25 @@ from numpy.random import RandomState
 from pathlib import Path
 import time
 
-create_new_data = False
+create_new_data = True
 train_data_frac = 0.8
-load_model = True
+load_model = False
 save_model = True
-show_histogram = False
+show_histogram = True
 show_val_acc = True
-show_train_acc = False
+show_train_acc = True
 
 num_of_input = 4
 batch_size = 10000
-learning_rate = 0.000001
-number_of_epochs = 40
+learning_rate = 0.01
+number_of_epochs = 50
 start_time = time.time()
 
-path_to_save_model_to = r'saved_models\model_anis4.pth'
-path_to_load_from = r'saved_models\model_anis4.pth'
-path_to_data = r'data\params.csv'
+path_to_save_model_to = r'saved_models\model_anis5.pth'
+path_to_load_from = r'saved_models\model_anis5.pth'
+path_to_data = r'data\params20220425.csv'
 train_path = Path(r'data\train_data.csv')
 val_path = Path(r'data\val_data.csv')
-# TODO plot histogram over the data to see the input spread
 
 
 if torch.cuda.is_available():
@@ -36,12 +35,12 @@ else:
     device = torch.device("cpu")
     print('Running on the CPU')
 
-# TODO visulize new features https://www.kaggle.com/code/ryanholbrook/creating-features
+
 if create_new_data:
-    df = pd.read_csv(path_to_data, names=['mean', 'var', 'azm', 'SWH', 'direction'])
+    df = pd.read_csv(path_to_data, names=['mean', 'var', 'SWH'])
 
     # Removes null values
-    df.drop(df[df['SWH'].isnull()].index, inplace = True)
+    df.drop(df[df['SWH'].isnull()].index, inplace=True)
     rng = RandomState(4)
     df['mean'] = (df['mean'] - df['mean'].mean()) / (df['mean'].std())
     df['var'] = (df['var'] - df['var'].mean()) / (df['var'].std())
@@ -52,6 +51,7 @@ if create_new_data:
     df['mean_times_var'] = (df['mean_times_var'] - df['mean_times_var'].mean()) / (df['mean_times_var'].std())
     df = df[['mean', 'var', 'mean_divided_var', 'mean_times_var', 'SWH']]
     #df = df[['mean', 'var', 'SWH']]
+
     train = df.sample(frac=train_data_frac, random_state=rng)
     test = df.loc[~df.index.isin(train.index)]
 
@@ -59,9 +59,6 @@ if create_new_data:
     val_path.parent.mkdir(parents=True, exist_ok=True)
     train.to_csv(train_path, index=False)
     test.to_csv(val_path, index=False)
-
-
-
 
 
 class CustomCsvDataset():
@@ -106,7 +103,7 @@ def main():
 
     training_data = np.loadtxt(train_path, dtype=np.float32, delimiter=",", skiprows=1)
     if show_histogram:
-        bin = np.linspace(min(training_data[:, 3]), max(training_data[:, 3]), 100)
+        bin = np.linspace(0, 7, 100)
         plt.hist(training_data[:, 3], bins=bin)
         plt.show()
 

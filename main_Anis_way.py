@@ -17,8 +17,8 @@ show_train_acc = True
 
 num_of_input = 4
 batch_size = 10000
-learning_rate = 0.00001
-number_of_epochs = 200
+learning_rate = 0.000002
+number_of_epochs = 1000
 start_time = time.time()
 
 path_to_save_model_to = r'saved_models\model_anis5.pth'
